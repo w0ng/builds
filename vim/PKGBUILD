@@ -1,0 +1,225 @@
+pkgbase=vim
+pkgname=('vim-python3' 'gvim-python3' 'vim-runtime-python3')
+_pkgprefix=('/opt/vim-python3')
+_srcpkgname=('vim')
+_topver=7.3
+_patchlevel=600
+__hgrev=11d40fc82f11
+_versiondir="vim${_topver//./}"
+pkgver=${_topver}.${_patchlevel}
+pkgrel=1
+arch=('i686' 'x86_64')
+license=('custom:vim')
+url="http://www.vim.org"
+makedepends=('gpm' 'python' 'ruby' 'libxt' 'desktop-file-utils' 'gtk2' 'lua')
+source=("ftp://ftp.archlinux.org/other/vim/vim-${pkgver}.tar.xz"
+        "ftp://ftp.archlinux.org/other/vim/vim-${pkgver}.tar.xz.sig"
+        'pythoncomplete.vim::http://www.vim.org/scripts/download_script.php?src_id=10872'
+        'vimrc'
+        'archlinux.vim'
+        'gvim.desktop')
+sha1sums=('a1c54bde75476ace5d24d4c17f7a81818e80dfda'
+          '14d62fe89d8292a6d2f7c46e8c61bd59bbd01083'
+          '4d9dcfb32874aa5467e6f06e418aeb4e675daaf2'
+          '3494baf53a63581ba69f86a81293640ff681c5c5'
+          '25dd3c2ce436e73a367c8f73b68f7f6889682437'
+          '4a579cf66590d711f49c5dfb4a25e5df116ff7ba')
+
+# source PKGBUILD && mksource
+mksource() {
+
+  [[ -x /usr/bin/hg ]] || (echo "hg not found. Install mercurial." && return 1)
+
+  __hgroot='http://vim.googlecode.com/hg/'
+  __hgrepo='vim'
+  __hgbranch='default'
+
+  hg clone -b ${__hgbranch} -u ${__hgrev} "${__hgroot}${__hgrepo}" ${__hgrepo}
+
+  pushd ${__hgrepo}
+  if (( $(hg id -n) < $(hg id -nr ${__hgbranch}) )); then
+    printf 'You are not building the latest revision!\n'
+    printf "Consider updating __hgrev to $(hg id -r ${__hgbranch}).\n"
+  fi
+  popd
+
+  mv vim ${pkgname}-${pkgver}
+  find ${pkgname}-${pkgver} -depth -type d -name .hg -exec rm -rf {} \;
+  rm ${pkgname}-${pkgver}/{.hgignore,.hgtags}
+  tar -cJf ${pkgname}-${pkgver}.tar.xz ${pkgname}-${pkgver}/*
+  rm -r ${pkgname}-${pkgver}
+  #gpg --detach-sign --use-agent -u ${GPGKEY} ${pkgname}-${pkgver}.tar.xz
+}
+
+build() {
+  # remove -O2 because there is a crash with python because of it
+  # fedora br: https://bugzilla.redhat.com/show_bug.cgi?id=817196
+  export CFLAGS="${CFLAGS/-O2 /}"
+
+  cd "${srcdir}"
+
+  cp -a ${_srcpkgname}-${pkgver} vim-build
+
+  # define the place for the global (g)vimrc file (set to /etc/vimrc)
+  sed -i 's|^.*\(#define SYS_.*VIMRC_FILE.*"\) .*$|\1|' \
+    vim-build/src/feature.h
+  sed -i 's|^.*\(#define VIMRC_FILE.*"\) .*$|\1|' \
+    vim-build/src/feature.h
+
+  (cd vim-build/src && autoconf)
+
+  cp -a vim-build gvim-build
+
+  cd "${srcdir}"/vim-build
+
+  ./configure --prefix=${_pkgprefix} --localstatedir=/var/lib/vim \
+    --with-features=big --with-compiledby=ArchLinux \
+    --enable-gpm --enable-acl --with-x=no \
+    --disable-gui --enable-multibyte --enable-cscope \
+    --disable-netbeans --enable-perlinterp --disable-pythoninterp \
+    --enable-python3interp --disable-rubyinterp --disable-luainterp
+
+  make
+
+  cd "${srcdir}"/gvim-build
+
+  ./configure --prefix=${_pkgprefix} --localstatedir=/var/lib/vim \
+    --with-features=big --with-compiledby=ArchLinux \
+    --enable-gpm --enable-acl --with-x=yes \
+    --enable-gui=gtk2 --enable-multibyte --enable-cscope \
+    --enable-netbeans --enable-perlinterp --disable-pythoninterp \
+    --enable-python3interp --enable-rubyinterp --enable-luainterp
+
+  make
+}
+
+check() {
+  # disable tests because they seem to freeze
+
+  cd "${srcdir}"/vim-build
+
+  #make test
+
+  cd "${srcdir}"/gvim-build
+
+  #make test
+}
+
+package_vim-python3() {
+  pkgdesc='Python 3 enabled Vi Improved, a highly configurable, improved version of the vi text editor'
+  depends=("vim-runtime-python3=${pkgver}-${pkgrel}" 'gpm')
+  conflicts=('gvim-python3')
+
+  cd "${srcdir}"/vim-build
+  make -j1 VIMRCLOC=/etc DESTDIR="${pkgdir}" install
+
+  # provided by (n)vi in core
+  rm "${pkgdir}"${_pkgprefix}/bin/{ex,view}
+
+  # delete some manpages
+  find "${pkgdir}"${_pkgprefix}/share/man -type d -name 'man1' 2>/dev/null | \
+    while read _mandir; do
+    cd ${_mandir}
+    rm -f ex.1 view.1 # provided by (n)vi
+    rm -f evim.1    # this does not make sense if we have no GUI
+  done
+
+  # Runtime provided by runtime package
+  rm -r "${pkgdir}"${_pkgprefix}/share/vim
+
+  # license
+  install -Dm644 "${srcdir}"/vim-${pkgver}/runtime/doc/uganda.txt \
+    "${pkgdir}"${_pkgprefix}/share/licenses/${pkgname}/license.txt
+
+  # executables
+  mkdir -p "${pkgdir}"/usr/local/bin
+  ln -s ${_pkgprefix}/bin/vim \
+    "${pkgdir}"/usr/local/bin/vim-python3
+}
+
+package_gvim-python3() {
+  pkgdesc='Python 3 enabled Vi Improved, a highly configurable, improved version of the vi text editor (with advanced features, such as a GUI)'
+  depends=("vim-runtime-python3=${pkgver}-${pkgrel}" 'gpm' 'ruby' 'libxt'
+           'desktop-file-utils' 'gtk2' 'lua' 'python')
+  provides=("vim-python3=${pkgver}-${pkgrel}")
+  conflicts=('vim-python3')
+  install=gvim.install
+
+  cd "${srcdir}"/gvim-build
+  make -j1 VIMRCLOC=/etc DESTDIR="${pkgdir}" install
+
+  # delete some manpages
+  find "${pkgdir}"${_pkgprefix}/share/man -type d -name 'man1' 2>/dev/null | \
+    while read _mandir; do
+    cd ${_mandir}
+    rm -f ex.1 view.1 # provided by (n)vi
+  done
+
+  # Move the runtime for later packaging
+  mv "${pkgdir}"${_pkgprefix}/share/vim "${srcdir}"/runtime-install
+
+  # freedesktop links
+  install -Dm644 "${srcdir}"/gvim.desktop \
+    "${pkgdir}"/opt/vim-python3/share/applications/gvim.desktop
+  install -Dm644 runtime/vim48x48.png "${pkgdir}"${_pkgprefix}/share/pixmaps/gvim.png
+
+  # license
+   install -Dm644 "${srcdir}"/vim-${pkgver}/runtime/doc/uganda.txt \
+    "${pkgdir}"${_pkgprefix}/share/licenses/${pkgname}/license.txt
+
+  # executables
+  mkdir -p "${pkgdir}"/usr/local/bin
+  ln -s ${_pkgprefix}/bin/vim \
+    "${pkgdir}"/usr/local/bin/vim-python3
+  ln -s ${_pkgprefix}/bin/gvim \
+    "${pkgdir}"/usr/local/bin/gvim-python3
+}
+
+package_vim-runtime-python3() {
+  pkgdesc='Python 3 enabled runtime for vim and gvim'
+  depends=('perl' 'gawk' "vim-runtime=${pkgver}-${pkgrel}")
+
+  # Install the runtime split from gvim
+  install -dm755 "${pkgdir}"${_pkgprefix}/share
+  mv "${srcdir}"/runtime-install "${pkgdir}"${_pkgprefix}/share/vim
+
+  # Don't forget logtalk.dict
+  install -Dm644 "${srcdir}"/gvim-build/runtime/ftplugin/logtalk.dict \
+    "${pkgdir}"${_pkgprefix}/share/vim/${_versiondir}/ftplugin/logtalk.dict
+
+  # fix FS#17216
+  sed -i 's|messages,/var|messages,/var/log/messages.log,/var|' \
+    "${pkgdir}"${_pkgprefix}/share/vim/${_versiondir}/filetype.vim
+
+  sed -i 's|messages,/var|messages,/var/log/messages.log,/var|' \
+    "${pkgdir}"${_pkgprefix}/share/vim/${_versiondir}/filetype.vim
+
+  # fix Python filetype to use Python 3 complete function
+  sed -i 's/pythoncomplete#Complete/python3complete#Complete/' \
+    "${pkgdir}"${_pkgprefix}/share/vim/${_versiondir}/ftplugin/python.vim 
+
+  # patch filetype.vim for better handling of pacman related files
+  sed -i "s/rpmsave/pacsave/;s/rpmnew/pacnew/;s/,\*\.ebuild/\0,PKGBUILD*,*.install/" \
+    "${pkgdir}"${_pkgprefix}/share/vim/${_versiondir}/filetype.vim
+  sed -i "/find the end/,+3{s/changelog_date_entry_search/changelog_date_end_entry_search/}" \
+    "${pkgdir}"${_pkgprefix}/share/vim/${_versiondir}/ftplugin/changelog.vim
+
+  # make Aaron happy
+  install -Dm644 "${srcdir}"/pythoncomplete.vim \
+    "${pkgdir}"${_pkgprefix}/share/vim/${_versiondir}/autoload/pythoncomplete.vim
+  
+  # rc files
+  install -Dm644 "${srcdir}"/archlinux.vim \
+    "${pkgdir}"${_pkgprefix}/share/vim/vimfiles/archlinux.vim
+
+  # rgb.txt file
+  install -Dm644 "${srcdir}"/vim-${pkgver}/runtime/rgb.txt \
+    "${pkgdir}"${_pkgprefix}/share/vim/${_versiondir}/rgb.txt
+
+  # license
+  install -dm755 "${pkgdir}"${_pkgprefix}/share/licenses/vim-runtime
+  ln -s ${_pkgprefix}/share/vim/${_versiondir}/doc/uganda.txt \
+    "${pkgdir}"${_pkgprefix}/share/licenses/vim-runtime/license.txt
+}
+
+# vim:set sw=2 sts=2 et:
