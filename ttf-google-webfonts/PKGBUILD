@@ -5,7 +5,7 @@
 # Contributor: Alexander De Sousa <archaur.xandy21@spamgourmet.com>
 
 pkgname=ttf-google-webfonts
-pkgver=20120804
+pkgver=20120805
 pkgrel=1
 pkgdesc="Google Web Fonts catalog."
 arch=('any')
@@ -13,13 +13,12 @@ url="http://code.google.com/p/googlefontdirectory"
 license=('various')
 depends=('fontconfig' 'xorg-fonts-encodings')
 makedepends=('git')
-conflicts=('jsmath-fonts' 'lohit-fonts' 'otf-goudy' 'ttf-andika'
-           'ttf-anonymous-pro' 'ttf-cantarell' 'ttf-cardo'
-           'ttf-chromeos-fonts' 'ttf-droid' 'ttf-inconsolata'
-           'ttf-kimberly_geswein_print' 'ttf-oldstandard'
-           'oldstand-font' 'ttf-ptsans' 'ttf-pt-sans'
-           'ttf-sil-fonts' 'ttf-ubuntu-font-family'
-           'ttf-vollkorn' 'googlefontdirectory')
+conflicts=('googlefontdirectory' 'jsmath-fonts' 'lohit-fonts' 'otf-goudy'
+           'ttf-andika' 'oldstand-font' 'ttf-ptsans' 'ttf-pt-sans'
+           'ttf-anonymous-pro' 'ttf-cantarell' 'ttf-cardo' 'ttf-chromeos-fonts'
+           'ttf-droid' 'ttf-inconsolata' 'ttf-kimberly_geswein_print'
+           'ttf-oldstandard' 'ttf-roboto' 'ttf-sortsmillgoudy' 'ttf-sil-fonts'
+           'ttf-ubuntu-font-family' 'ttf-vollkorn')
 install=font.install
 source=()
 md5sums=()
@@ -31,20 +30,22 @@ build() {
   cd "$srcdir"
   msg "Connecting to GIT server...."
 
-  if [ -d $_gitname ] ; then
-    cd $_gitname && git pull origin
+  if [[ -d "$_gitname" ]] ; then
+    cd "$_gitname" && git pull origin
     msg "The local files are updated."
   else
-    git clone $_gitroot $_gitname
+    git clone --depth=1 "$_gitroot" "$_gitname"
   fi
 
   msg "GIT checkout done or server timeout"
-  msg 'Starting make...'
+  msg "Starting build..."
 
   rm -rf "$srcdir/$_gitname-build"
   git clone "$srcdir/$_gitname" "$srcdir/$_gitname-build"
-  cd "$srcdir/$_gitname-build"
+}
 
+package() {
+  cd "$srcdir/$_gitname-build"
   install -dm755 "$pkgdir/usr/share/fonts/TTF"
   find . -type f -name \*.ttf -exec install -Dm644 '{}' \
     "$pkgdir/usr/share/fonts/TTF" \;
