@@ -12,8 +12,8 @@ url="http://rtmpdump.mplayerhq.hu/"
 license=('GPL2' 'LGPL2.1')
 depends=('openssl')
 #source=(http://rtmpdump.mplayerhq.hu/download/${pkgname}-${pkgver}.tgz)
-source=(ftp://ftp.archlinux.org/other/${pkgname}/${pkgname}-${pkgver}.tar.xz)
-sha256sums=('2c3b76d46d56180176ef099b8ad50a1608bef1dac35d8cb0b21ceac31b5c0656')
+source=(http://repo.or.cz/w/rtmpdump.git/snapshot/dc762e41a090b5c238bd7daedab13def69eb140b.tar.gz)
+sha256sums=('1a05c42fddadb423fb709f17a34aa344d8d12ab3695237224849dcdf29c6ca66')
 
 build() {
   cd "${srcdir}/${pkgname}-${pkgver}"  
