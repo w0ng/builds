@@ -1,6 +1,5 @@
 # $Id: PKGBUILD 151284 2012-02-25 12:42:20Z pierre $
 # Maintainer: AndyRTR <andyrtr@archlinux.org>
-# Description: OpenGL 3.x and GLSL man pages
 
 pkgname=opengl-man-pages
 _svndate=20130425
@@ -14,7 +13,7 @@ makedepends=('libxslt' 'docbook-xsl' 'w3c-mathml2' 'docbook-mathml')
 options=('!makeflags')
 source=("${pkgname}_${_svndate}.tar.xz"
         'LICENSE')
-md5sums=('0808d130b87e251937216f2d2c13309b'
+md5sums=('92337f4267fedd87267b3dd1ab9e0494'
          'cb856abe5968300057e650096ba25b2f')
 
 # source PKGBUILD && mksource
@@ -30,21 +29,25 @@ mksource() {
 }
 
 build() {
-  cd "${srcdir}"
   export ROOT="${srcdir}/man3"
-  make -C man3
-  make -C manglsl
 
-  find  manglsl -maxdepth 1 -type f -name \*.xml -exec \
+  mkdir "${srcdir}/build"
+  cd "${srcdir}/build"
+
+  make -C ../man3
+  make -C ../manglsl
+
+  # Fix XML mismatches
+  find  ../manglsl -maxdepth 1 -type f -name \*.xml -exec \
     sed -i 's/#VARTABLECOLS#/<tgroup cols="1"> #VARTABLECOLS#/' {} \;
 
-  find  man3 manglsl -maxdepth 1 -type f -name \*.xml -exec \
+  find  ../man3 ../manglsl -maxdepth 1 -type f -name \*.xml -exec \
     xsltproc --noout --nonet /usr/share/xml/docbook/xsl-stylesheets-1.78.1/manpages/docbook.xsl {} \;
 }
 
 package() {
+  cd "${srcdir}/build"
   install -d "${pkgdir}/usr/share/man/man3"
-  install -D -m644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
-  cd "${srcdir}/man3" && install -m644 *.3G "${pkgdir}/usr/share/man/man3/"
-  cd "${srcdir}/manglsl" && install -m644 *.3G "${pkgdir}/usr/share/man/man3/"
+  install -m644 *.3G "${pkgdir}/usr/share/man/man3/"
+  install -D -m644 ../LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
 }
