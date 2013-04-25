@@ -18,7 +18,7 @@ md5sums=('92337f4267fedd87267b3dd1ab9e0494'
 
 # source PKGBUILD && mksource
 mksource() {
-  mkdir ${pkgname}-source
+  [[ -d ${pkgname}-source ]] || mkdir -d ${pkgname}-source
   pushd ${pkgname}-source
   [[ -x /usr/bin/svn ]] || (echo "svn not found. Install subversion." && return 1)
   svn co --username anonymous --password anonymous https://cvs.khronos.org/svn/repos/ogl/trunk/ecosystem/public/sdk/docs/man3/ man3
@@ -31,7 +31,8 @@ mksource() {
 build() {
   export ROOT="${srcdir}/man3"
 
-  mkdir "${srcdir}/build"
+  [[ -d "${srcdir}/build" ]] || mkdir "${srcdir}/build"
+
   cd "${srcdir}/build"
 
   make -C ../man3
@@ -57,8 +58,14 @@ build() {
 }
 
 package() {
-  cd "${srcdir}/build"
-  install -d "${pkgdir}/usr/share/man/man3"
-  install -m644 *.3G "${pkgdir}/usr/share/man/man3/"
-  install -D -m644 ../LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+  cd "${srcdir}"
+  install -dm755 "${pkgdir}/usr/share/man/man3"
+  install -Dm644 build/*.3G "${pkgdir}/usr/share/man/man3/"
+
+  install -dm755 "${pkgdir}/usr/share/doc/${pkgname}/opengl3"
+  install -Dm644 man3/xhtml/* "${pkgdir}/usr/share/doc/${pkgname}/opengl3"
+  install -dm755 "${pkgdir}/usr/share/doc/${pkgname}/glsl"
+  install -Dm644 manglsl/xhtml/* "${pkgdir}/usr/share/doc/${pkgname}/glsl"
+
+  install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
 }
