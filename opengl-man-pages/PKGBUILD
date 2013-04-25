@@ -41,8 +41,19 @@ build() {
   find  ../manglsl -maxdepth 1 -type f -name \*.xml -exec \
     sed -i 's/#VARTABLECOLS#/<tgroup cols="1"> #VARTABLECOLS#/' {} \;
 
-  find  ../man3 ../manglsl -maxdepth 1 -type f -name \*.xml -exec \
+  find  ../man3 -maxdepth 1 -type f -name \*.xml -exec \
     xsltproc --noout --nonet /usr/share/xml/docbook/xsl-stylesheets-1.78.1/manpages/docbook.xsl {} \;
+
+  find  . -maxdepth 1 -type f -name \*.3G \
+    -exec sed -i 's/\[FIXME: manual\]/OpenGL 3.3 Reference/' {} \; \
+    -exec sed -i 's/\[FIXME: source\]/opengl-man-pages/' {} \;
+
+  find  ../manglsl -maxdepth 1 -type f -name \*.xml -exec \
+    xsltproc --noout --nonet /usr/share/xml/docbook/xsl-stylesheets-1.78.1/manpages/docbook.xsl {} \;
+
+  find  . -maxdepth 1 -type f -name \*.3G \
+    -exec sed -i 's/\[FIXME: manual\]/OpenGL Shading Language (GLSL) Reference/' {} \; \
+    -exec sed -i 's/\[FIXME: source\]/opengl-man-pages/' {} \;
 }
 
 package() {
