@@ -1,0 +1,50 @@
+# $Id: PKGBUILD 151284 2012-02-25 12:42:20Z pierre $
+# Maintainer: AndyRTR <andyrtr@archlinux.org>
+# Description: OpenGL 3.x and GLSL man pages
+
+pkgname=opengl-man-pages
+_svndate=20130425
+pkgver=0.${_svndate}
+pkgrel=1
+pkgdesc="OpenGL Man Pages"
+arch=('any')
+url="http://www.opengl.org/wiki/Getting_started/XML_Toolchain_and_Man_Pages"
+license=('custom')
+makedepends=('libxslt' 'docbook-xsl' 'w3c-mathml2' 'docbook-mathml')
+options=('!makeflags')
+source=("${pkgname}_${_svndate}.tar.xz"
+        'LICENSE')
+md5sums=('0808d130b87e251937216f2d2c13309b'
+         'cb856abe5968300057e650096ba25b2f')
+
+# source PKGBUILD && mksource
+mksource() {
+  mkdir ${pkgname}-source
+  pushd ${pkgname}-source
+  [[ -x /usr/bin/svn ]] || (echo "svn not found. Install subversion." && return 1)
+  svn co --username anonymous --password anonymous https://cvs.khronos.org/svn/repos/ogl/trunk/ecosystem/public/sdk/docs/man3/ man3
+  svn co --username anonymous --password anonymous https://cvs.khronos.org/svn/repos/ogl/trunk/ecosystem/public/sdk/docs/manglsl/ manglsl
+  find . -maxdepth 2 -type d -name .svn -exec rm -rf {} \;
+  tar -cvJf ../${pkgname}_${_svndate}.tar.xz man3/* manglsl/*
+  popd
+}
+
+build() {
+  cd "${srcdir}"
+  export ROOT="${srcdir}/man3"
+  make -C man3
+  make -C manglsl
+
+  find  manglsl -maxdepth 1 -type f -name \*.xml -exec \
+    sed -i 's/#VARTABLECOLS#/<tgroup cols="1"> #VARTABLECOLS#/' {} \;
+
+  find  man3 manglsl -maxdepth 1 -type f -name \*.xml -exec \
+    xsltproc --noout --nonet /usr/share/xml/docbook/xsl-stylesheets-1.78.1/manpages/docbook.xsl {} \;
+}
+
+package() {
+  install -d "${pkgdir}/usr/share/man/man3"
+  install -D -m644 LICENSE "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+  cd "${srcdir}/man3" && install -m644 *.3G "${pkgdir}/usr/share/man/man3/"
+  cd "${srcdir}/manglsl" && install -m644 *.3G "${pkgdir}/usr/share/man/man3/"
+}
