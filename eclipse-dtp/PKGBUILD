@@ -1,0 +1,37 @@
+# Maintainer: Shanto <shanto@hotmail.com>
+# Contributor: Andrew Wong <wongadev@gmail.com>
+# Contributor: Jonathan Wiersma <archaur at jonw dot org>
+
+pkgname=eclipse-dtp
+pkgver=1.11.1
+pkgrel=1
+pkgdesc="Data Tools Platform for Eclipse"
+arch=('any')
+url="http://www.eclipse.org/datatools/"
+license=('EPL')
+depends=('eclipse>=3.7.2' 'eclipse-emf>=2.7.2' 'eclipse-gef>=3.7.2')
+_mirror="http://www.eclipse.org/downloads/download.php?r=1&file="
+source=("$_mirror/datatools/downloads/${pkgver:0:4}/dtp_$pkgver.zip")
+md5sums=('05d2ca49bd6a7facfb56e714ecdb3e54')
+
+package() {
+  _dest=${pkgdir}/usr/share/eclipse/dropins/${pkgname/eclipse-}/eclipse
+
+  cd ${srcdir}/eclipse
+
+  # Features
+  find features -type f | while read _feature ; do
+    if [[ ${_feature} =~ (.*\.jar$) ]] ; then
+      install -dm755 ${_dest}/${_feature%*.jar}
+      cd ${_dest}/${_feature/.jar}
+      jar xf ${srcdir}/${_feature} || return 1
+    else
+      install -Dm644 ${_feature} ${_dest}/${_feature}
+    fi
+  done
+
+  # Plugins
+  find plugins -type f | while read _plugin ; do
+    install -Dm644 ${_plugin} ${_dest}/${_plugin}
+  done
+}

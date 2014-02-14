@@ -1,0 +1,39 @@
+# Maintainer: Shanto <shanto@hotmail.com>
+# Contributor: Andrew Wong <wongadev@gmail.com>
+# Contributor: Jonathan Wiersma <archaur at jonw dot org>
+
+pkgname=eclipse-wtp
+pkgver=3.5.1
+_date=20130913223750
+pkgrel=1
+pkgdesc="Web Tools Platform project for Eclipse"
+arch=('any')
+url="http://www.eclipse.org/webtools/"
+license=('EPL')
+depends=('eclipse>=4.3.1' 'eclipse-emf>=2.9.1' 'eclipse-gef>=3.9.1' 'eclipse-dtp>=1.11')
+provides=('eclipse-wtp-wst')
+_mirror="http://www.eclipse.org/downloads/download.php?r=1&file="
+source=("$_mirror/webtools/downloads/drops/R$pkgver/R-$pkgver-${_date}/wtp4x-R-$pkgver-${_date}.zip")
+md5sums=('e9d1002fb1fcbd1229d95d2f3d797359')
+
+package() {
+  _dest=${pkgdir}/usr/share/eclipse/dropins/${pkgname/eclipse-}/eclipse
+
+  cd ${srcdir}/eclipse
+
+  # Features
+  find features -type f | while read _feature ; do
+    if [[ ${_feature} =~ (.*\.jar$) ]] ; then
+      install -dm755 ${_dest}/${_feature%*.jar}
+      cd ${_dest}/${_feature/.jar}
+      jar xf ${srcdir}/${_feature} || return 1
+    else
+      install -Dm644 ${_feature} ${_dest}/${_feature}
+    fi
+  done
+
+  # Plugins
+  find plugins -type f | while read _plugin ; do
+    install -Dm644 ${_plugin} ${_dest}/${_plugin}
+  done
+}

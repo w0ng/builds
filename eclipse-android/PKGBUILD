@@ -1,0 +1,48 @@
+# Maintainer: Jakub Schmidtke <sjakub-at-gmail-dot-com>
+# Contributor: Andrew Wong <wongadev at gmail com>
+# Contributor: Forrest L <cybercyst at gmail com>
+# Contributor: Forrest L <cybercyst at gmail com>
+# Contributor: Michael P <ptchinster@archlinux.us>
+# Contributor: Marcin "eXine" M. <exine@jun.pl>
+# Contributor: Artyom Smirnov <smirnoffjr@gmail.com>
+# Contributor: Ashok `ScriptDevil` Gautham <ScriptDevil@gmail.com>
+# Contributor: Laszlo Papp <djszapi2 at gmail com>
+# Contributor: Antonio Santos <asantos at gmail dot com>
+
+pkgname=eclipse-android
+pkgver=22.3.0
+pkgrel=1
+arch=('any')
+pkgdesc='Eclipse plugin for Android'
+url='https://developer.android.com/sdk/eclipse-adt.html'
+license=('Apache' 'BSD' 'EPL' 'LGPL')
+depends=("android-sdk>=r${pkgver:0:4}" 'java-environment>=6' 'eclipse>=3.6.2' 'eclipse-wtp')
+options=('!strip')
+source=("http://dl.google.com/android/ADT-${pkgver}.zip" "LICENSE.kxml2")
+sha1sums=('a70e4ece6c47ba4399a6e232e3a2f113904e9c58'
+          'c0a96dc032bb53e2921200c85f5cf650e49878e9')
+
+package() {
+  _dest=${pkgdir}/usr/share/eclipse/dropins/${pkgname/eclipse-}/eclipse
+
+  cd ${srcdir}
+
+  # Features
+  find features -type f | while read _feature ; do
+    if [[ ${_feature} =~ (.*\.jar$) ]] ; then
+      install -dm755 ${_dest}/${_feature%*.jar}
+      cd ${_dest}/${_feature/.jar}
+      jar xf ${srcdir}/${_feature} || return 1
+    else
+      install -Dm644 ${_feature} ${_dest}/${_feature}
+    fi
+  done
+
+  # Plugins
+  find plugins -type f | while read _plugin ; do
+    install -Dm644 ${_plugin} ${_dest}/${_plugin}
+  done
+
+  install -D -m644 LICENSE.kxml2 "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE.kxml2"
+}
+

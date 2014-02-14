@@ -1,0 +1,41 @@
+# Maintainer: Limao Luo <luolimao+AUR@gmail.com>
+# Contributor: Andrew Wong <wongadev@gmail.com>
+# Contributor: Stéphane Marguet (Stemp) <smarguet@gmail.com>
+# Contributor: Angel Velasquez <angvp@archlinux.org> 
+# Contributor: Corrado Primier <bardo@aur.archlinux.org>
+# Contributor: Rubin Simons <rubin@xs4all.nl>
+
+pkgname=eclipse-gef
+pkgver=3.9.1
+_date=201308190730
+pkgrel=1
+pkgdesc="GEF framework for the Eclipse platform"
+arch=('any')
+url="http://www.eclipse.org/gef/"
+license=('EPL')
+depends=('eclipse')
+_mirror="http://www.eclipse.org/downloads/download.php?r=1&file="
+source=("$_mirror/tools/gef/downloads/drops/$pkgver/R${_date}/GEF-ALL-$pkgver.zip")
+sha256sums=('247f24aab10ac7c8484b9f8ce2d9c7a34b1f04531e33793124189ae2a53175d8')
+
+package() {
+  _dest=${pkgdir}/usr/share/eclipse/dropins/${pkgname/eclipse-}/eclipse
+
+  cd ${srcdir}/eclipse
+
+  # Features
+  find features -type f | while read _feature ; do
+    if [[ ${_feature} =~ (.*\.jar$) ]] ; then
+      install -dm755 ${_dest}/${_feature%*.jar}
+      cd ${_dest}/${_feature/.jar}
+      jar xf ${srcdir}/${_feature} || return 1
+    else
+      install -Dm644 ${_feature} ${_dest}/${_feature}
+    fi
+  done
+
+  # Plugins
+  find plugins -type f | while read _plugin ; do
+    install -Dm644 ${_plugin} ${_dest}/${_plugin}
+  done
+}
