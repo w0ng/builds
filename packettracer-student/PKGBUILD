@@ -1,28 +1,32 @@
+# Maintainer: Andrew Wong <wongadev@gmail.com>
+# You must manually download Cisco Package Tracer from:
+# https://www.netacad.com/documents/301287/144936315/Cisco+Packet+Tracer+6.1+for+Linux+-+Ubuntu+installation+%28with+tutorials%29%20-+Student+version.tar.gz/d639a1a7-1228-4a9d-8099-2a99096dc594
+
+# Original packettracer AUR package
 # Maintainer: Alexey Kharlamov <der@2-47.ru>
-# Contributor: David Dufberg Tøttrup <david at dufberg dot se>
+# Contributor: David Dufberg TÃ¸ttrup <david at dufberg dot se>
 # Contributor: Jordi De Groof <jordi(dot)degroof(at)gmail(dot)com>
 # Contributor: pyther <pyther@pyther.net>
 
-pkgname=packettracer
-pkgver=6.0.1
-pkgrel=3
-pkgdesc="Network design and emulation software for Cisco's Networking Academy instructors and students."
-arch=( 'i686' 'x86_64' )
+pkgname=packettracer-student
+pkgver=6.1
+pkgrel=1
+pkgdesc="Network design and emulation software for Cisco's Networking Academy students."
+arch=('i686' 'x86_64')
 url="http://www.cisco.com/web/learning/netacad/course_catalog/PacketTracer.html"
 license=('custom')
-changelog="ChangeLog"
-
-# Untested
-[ "$CARCH" = "x86_64" ] && depends=('lib32-openssl' 'lib32-qt4' 'lib32-libpng') && makedepends=('gcc-multilib')
-[ "$CARCH" = "i686" ] && depends=('qtwebkit' 'libpng')
-
-# Requires Netacad Username/Password to download
-# https://www.netacad.com/documents/301287/48648242/Cisco+Packet+Tracer+6.0.1+for+Linux+%28with+tutorials%29/7b756b52-9a8e-4608-98cf-b6954cea3aab 
-source=( 'http://Cisco Packet Tracer 6.0.1 for Linux (with tutorials)' 'packettracer' 
-'linguist' )
-md5sums=('6d623bc0761cbb6e3cdccb3c0e0ec70b'
-	'e0bdbe6ca4d693f4dde2eab81bb97a74'
-	'fd2f166d9b2cfbae0bd4cff792a9a270')
+if [[ "$CARCH" = 'x86_64' ]]; then
+  depends=('lib32-openssl' 'lib32-qt4' 'lib32-libpng')
+  makedepends=('gcc-multilib')
+elif [[ "$CARCH" = 'i686' ]]; then
+  depends=('qtwebkit' 'libpng')
+fi
+source=('Cisco Packet Tracer 6.1 for Linux - Ubuntu installation (with tutorials) - Student version.tar.gz' 
+        'tpl.linguist'
+        'tpl.packettracer')
+md5sums=('bb0807a52147701417afb7aaaa5110ec'
+         '44911e33930d8469eb2240cc807d4a32'
+         '1e6109dea412e21f63054541614235fd')
 
 # We don't want to strip anything from the static libraries
 # We want to keep all binaries orginal (Cisco is goofy)
@@ -30,7 +34,7 @@ options=(!strip)
 install=pt.install
 
 package() {
-  cd ${srcdir}/PacketTracer601
+  cd ${srcdir}/PacketTracer61Student
 
   mkdir -p ${pkgdir}/opt/pt/{art,backgrounds,bin,extensions,help,LANGUAGES,lib,saves,sounds,templates}
 
@@ -38,14 +42,12 @@ package() {
   cp -r ./backgrounds/* ${pkgdir}/opt/pt/backgrounds
   cp -r ./bin/* ${pkgdir}/opt/pt/bin
   cp -r ./extensions/* ${pkgdir}/opt/pt/extensions
+  cp -r ./help/* ${pkgdir}/opt/pt/help
   cp -r ./LANGUAGES/* ${pkgdir}/opt/pt/LANGUAGES
+  cp -r ./lib/* ${pkgdir}/opt/pt/lib
   cp -r ./saves/* ${pkgdir}/opt/pt/saves
   cp -r ./sounds/* ${pkgdir}/opt/pt/sounds
   cp -r ./templates/* ${pkgdir}/opt/pt/templates
-  cp -r ./lib/* ${pkgdir}/opt/pt/lib
-
-  # Help Files that are optinal uncomment to include them (55 MB)
-  # cp -r ./help/* ${pkgdir}/opt/pt/help
 
   # Mime Info for PKA, PKT, PKZ
   install -D -m644 ./bin/Cisco-pka.xml ${pkgdir}/usr/share/mime/packages/Cisco-pka.xml
@@ -66,18 +68,17 @@ package() {
 
   # Shell script to start PT and tell it to use included qt files
   # Arch's QT causes PT to crash when saving!
-  install -D -m755 ${srcdir}/packettracer ${pkgdir}/opt/pt/packettracer
+  install -D -m755 ${srcdir}/tpl.packettracer ${pkgdir}/opt/pt/packettracer
 
   # Symlink to /usr/bin
   mkdir -p ${pkgdir}/usr/bin/
   ln -s /opt/pt/packettracer ${pkgdir}/usr/bin/pt
 
   # Improved version of Cisco's linguist script
-  install -D -m755 ${srcdir}/linguist ${pkgdir}/opt/pt/linguist
+  install -D -m755 ${srcdir}/tpl.linguist ${pkgdir}/opt/pt/linguist
 
   # Desktop File
   install -D -m644 ./bin/Cisco-PacketTracer.desktop ${pkgdir}/usr/share/applications/Cisco-PacketTracer.desktop
   sed 's/\/usr\/local\/PacketTracer6/\/opt\/pt/' -i ${pkgdir}/usr/share/applications/Cisco-PacketTracer.desktop 
   rm ${pkgdir}/opt/pt/bin/Cisco-PacketTracer.desktop
 }
-

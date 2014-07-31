@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# Original Cisco Script
+# =====================
+
+#echo Starting Linguist
+#
+#PTDIR=III
+#export LD_LIBRARY_PATH=$PTDIR/lib
+#pushd $PTDIR/bin > /dev/null
+#./linguist $@ > /dev/null 2>&1
+#popd > /dev/null
+
+# Modified and improved version of Cisco's Script
+# ===============================================
+
+# As for now, PacketTracer works with built-in arch libraries
+# If you exprerience any troubles, try to uncomment
+# the following line        
+
+# export LD_LIBRARY_PATH="/opt/pt/lib" 
+
+/opt/pt/bin/linguist "$@"
+
